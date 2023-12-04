@@ -12,7 +12,7 @@ pipeline {
         AWS_ACCESS_KEY_ID = 'AKIAZPSCFGJHKEHZUFES'
         AWS_SECRET_ACCESS_KEY = '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'
         TARGET_GROUP_ARN_CLIENT = 'arn:aws:elasticloadbalancing:us-east-1:651900039758:targetgroup/docker-client-tg/ca861bb7d01157d0'
-        TARGET_GROUP_ARN_SERVER = 'arn:aws:elasticloadbalancing:us-east-1:651900039758:targetgroup/docker-server-tg/a69d5bfce94b0eac'
+        TARGET_GROUP_ARN_SERVER = 'arn:aws:elasticloadbalancing:us-east-1:651900039758:targetgroup/docker-server-tg/8a5abfd9948e2b76'
         
     }
     
