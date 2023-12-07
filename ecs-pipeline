@@ -3,20 +3,26 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'farhaan01'
-        ECS_CLUSTER = 'docker-cluster'
-        ECS_SERVICE_CLIENT = 'docker-client'
-        ECS_SERVICE_SERVER = 'docker-server'
-        CLIENT_TASK_DEFINITION= 'docker-client'
-        SERVER_TASK_DEFINITION= 'docker-server'
+        ECS_CLUSTER = 'docker-cluster-pipeline'
+        ECS_SERVICE_CLIENT = 'react-client'
+        ECS_SERVICE_SERVER = 'react-server'
+        CLIENT_TASK_DEFINITION = 'react-client'
+        SERVER_TASK_DEFINITION = 'react-server' 
         AWS_REGION = 'us-east-1'
-        AWS_ACCESS_KEY_ID = 'AKIAZPSCFGJHKEHZUFES'
-        AWS_SECRET_ACCESS_KEY = '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'
-        TARGET_GROUP_ARN_CLIENT = 'arn:aws:elasticloadbalancing:us-east-1:651900039758:targetgroup/docker-client-tg/ca861bb7d01157d0'
-        TARGET_GROUP_ARN_SERVER = 'arn:aws:elasticloadbalancing:us-east-1:651900039758:targetgroup/docker-server-tg/8a5abfd9948e2b76'
-        
+        AWS_ACCESS_KEY_ID = 'AKIAVG7KWNILPPA7CLCC'
+        AWS_SECRET_ACCESS_KEY = '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'
+        TARGET_GROUP_ARN_CLIENT = 'arn:aws:elasticloadbalancing:us-east-1:358585100822:targetgroup/react-client-tg/9a4439a091f0a7a6'
+        TARGET_GROUP_ARN_SERVER = 'arn:aws:elasticloadbalancing:us-east-1:358585100822:targetgroup/react-server-tg/71177892f5a218bc'
+        AWS_DEFAULT_REGION = 'us-east-1'
+        ECR_REPO_URL1 = 'public.ecr.aws/b1h1e2a0'
+        ECR_REPO_URL2 = 'public.ecr.aws/b1h1e2a0'
+        IMAGE_NAME1 = 'react-client'
+        IMAGE_NAME2 = 'react-server'
+        AWS_ACCESS_KEY_ID = 'AKIAVG7KWNILPPA7CLCC'
+        AWS_SECRET_ACCESS_KEY = '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'
     }
-    
     stages {
+        
         stage('Clone Git Repository') {
             steps {
                 git 'https://github.com/Farhaan1/docker-pipeline.git'
@@ -29,7 +35,7 @@ pipeline {
                         def clientImageTag = "react-client:latest"
                         sh "docker build -t ${clientImageTag} -f Dockerfile.dev ."
                         sh "docker tag ${clientImageTag} ${DOCKER_REGISTRY}/${clientImageTag}"
-                       withDockerRegistry(credentialsId: 'docker-ecs', url: 'https://index.docker.io/v1/') {
+                        withDockerRegistry(credentialsId: 'dockerhub', url: 'https://index.docker.io/v1/') {
                             // sh "docker login -u architectdevops7 -p ${env.docker-hub-user}"
                             sh "docker push ${DOCKER_REGISTRY}/${clientImageTag}"
                         }
@@ -41,7 +47,6 @@ pipeline {
                 }
             }
         }
-        
         stage('Build and Push Server Images') {
             steps {
                 dir('server') {
@@ -49,7 +54,7 @@ pipeline {
                         def serverImageTag = "react-server:latest"
                         sh "docker build -t ${serverImageTag} -f Dockerfile.dev ."
                         sh "docker tag ${serverImageTag} ${DOCKER_REGISTRY}/${serverImageTag}"
-                        withDockerRegistry(credentialsId: 'docker-ecs', url: 'https://index.docker.io/v1/') {
+                        withDockerRegistry(credentialsId: 'dockerhub', url: 'https://index.docker.io/v1/') {
                             // sh "docker login -u architectdevops7 -p ${env.docker-hub-user}"
                             sh "docker push ${DOCKER_REGISTRY}/${serverImageTag}"
                         }
@@ -57,6 +62,20 @@ pipeline {
                         def serverImageTagOutput = sh(returnStdout: true, script: "docker inspect --format='{{index .RepoTags 0}}' ${DOCKER_REGISTRY}/${serverImageTag}").trim()
                         env.SERVER_IMAGE_TAG = serverImageTagOutput
                     }
+                }
+            }
+        }
+     stage('Build and Push to ECR') {
+            steps {
+                script {
+                    sh "docker tag $IMAGE_NAME1:latest $ECR_REPO_URL1/$IMAGE_NAME1:latest"
+                    sh "aws ecr-public get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URL1"
+                    sh "docker push $ECR_REPO_URL1/$IMAGE_NAME1:latest"
+                }
+                script {
+                    sh "docker tag $IMAGE_NAME2:latest $ECR_REPO_URL2/$IMAGE_NAME2:latest"
+                    sh "aws ecr-public get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URL2"
+                    sh "docker push $ECR_REPO_URL2/$IMAGE_NAME2:latest"
                 }
             }
         }
@@ -106,7 +125,7 @@ pipeline {
             steps {
                 script {
                     // Update the ECS service with ALB and target group
-                    sh "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_CLIENT --desired-count 2 --task-definition ${CLIENT_TASK_DEFINITION} --region ${AWS_REGION} --load-balancers targetGroupArn=${TARGET_GROUP_ARN_CLIENT},containerName=docker-client,containerPort=3000 --force-new-deployment"
+                    sh "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_CLIENT --desired-count 2 --task-definition ${CLIENT_TASK_DEFINITION} --region ${AWS_REGION} --load-balancers targetGroupArn=${TARGET_GROUP_ARN_CLIENT},containerName=react-client,containerPort=3000 --force-new-deployment"
                 }
             }
         }
@@ -114,7 +133,7 @@ pipeline {
             steps {
                 script {
                     // Update the ECS service with ALB and target group
-                    sh "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_SERVER --desired-count 2 --task-definition ${SERVER_TASK_DEFINITION} --region ${AWS_REGION} --load-balancers targetGroupArn=${TARGET_GROUP_ARN_SERVER},containerName=docker-server,containerPort=5000 --force-new-deployment"
+                    sh "aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_SERVER --desired-count 2 --task-definition ${SERVER_TASK_DEFINITION} --region ${AWS_REGION} --load-balancers targetGroupArn=${TARGET_GROUP_ARN_SERVER},containerName=react-server,containerPort=5000 --force-new-deployment"
                 }
             }
         }
