@@ -18,9 +18,7 @@ pipeline {
         ECR_REPO_URL2 = 'public.ecr.aws/b1h1e2a0'
         IMAGE_NAME1 = 'react-client'
         IMAGE_NAME2 = 'react-server'
-        AWS_ACCESS_KEY_ID = 'AKIAVG7KWNILPPA7CLCC'
-        AWS_SECRET_ACCESS_KEY = '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'
-    }
+}
     stages {
         
         stage('Clone Git Repository') {
