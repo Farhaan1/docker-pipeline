@@ -39,7 +39,7 @@ const App = () => {
 
   return (
     <div>
-      <h1>CreatReadUpdateDelete - CRUDdds helly........ Application</h1>
+      <h1>CreatReadUpdateDelete - CRUDdds helly0........ Application</h1>
       <div>
         <input
           type="text"
